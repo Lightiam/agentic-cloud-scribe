@@ -4,6 +4,7 @@ import Hero from "@/components/Hero";
 import Features from "@/components/Features";
 import Services from "@/components/Services";
 import TechStack from "@/components/TechStack";
+import Pricing from "@/components/Pricing";
 
 const Index = () => {
   return (
@@ -13,6 +14,7 @@ const Index = () => {
       <Services />
       <Features />
       <TechStack />
+      <Pricing />
     </div>
   );
 };
