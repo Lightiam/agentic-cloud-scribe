@@ -52,30 +52,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
+      console.log('Login attempt for:', email);
       const response = await authAPI.login({ email, password });
       const { access_token } = response.data;
       
+      console.log('Login successful, token received');
       localStorage.setItem('access_token', access_token);
       setToken(access_token);
       
       // Fetch user profile after login
       await fetchUserProfile();
     } catch (error) {
+      console.error('Login failed:', error);
       throw error;
     }
   };
 
   const register = async (email: string, username: string, password: string) => {
     try {
+      console.log('API Base URL:', import.meta.env.VITE_API_BASE_URL);
+      console.log('Register attempt for:', { email, username });
+      
       const response = await authAPI.register({ email, username, password });
+      console.log('Registration API response:', response);
+      
       const { access_token } = response.data;
       
+      console.log('Registration successful, token received');
       localStorage.setItem('access_token', access_token);
       setToken(access_token);
       
       // Fetch user profile after registration
       await fetchUserProfile();
     } catch (error) {
+      console.error('Registration failed in AuthContext:', error);
       throw error;
     }
   };

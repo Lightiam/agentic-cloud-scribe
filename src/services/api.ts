@@ -3,6 +3,8 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
+console.log('API Base URL configured as:', API_BASE_URL);
+
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -16,15 +18,39 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  console.log('Making API request to:', config.url, 'with base URL:', config.baseURL);
   return config;
 });
 
+// Add response interceptor for better error handling
+api.interceptors.response.use(
+  (response) => {
+    console.log('API response received:', response.config.url, response.status);
+    return response;
+  },
+  (error) => {
+    console.error('API error intercepted:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message
+    });
+    return Promise.reject(error);
+  }
+);
+
 // Auth API
 export const authAPI = {
-  register: (data: { email: string; username: string; password: string }) =>
-    api.post('/auth/register', data),
-  login: (data: { email: string; password: string }) =>
-    api.post('/auth/login', data),
+  register: (data: { email: string; username: string; password: string }) => {
+    console.log('Calling register API with data:', { email: data.email, username: data.username });
+    return api.post('/auth/register', data);
+  },
+  login: (data: { email: string; password: string }) => {
+    console.log('Calling login API with email:', data.email);
+    return api.post('/auth/login', data);
+  },
 };
 
 // Pricing API
