@@ -14,6 +14,8 @@ const Navigation = () => {
   const navItems = [
     { name: "Home", href: "/", active: window.location.pathname === "/" },
     { name: "Dashboard", href: "/dashboard", active: window.location.pathname === "/dashboard", authRequired: true },
+    { name: "Workspace", href: "/workspace", active: window.location.pathname === "/workspace", authRequired: true },
+    { name: "Profile", href: "/profile", active: window.location.pathname === "/profile", authRequired: true },
     { name: "Pricing Plans", href: "/#pricing", active: false }
   ];
 
