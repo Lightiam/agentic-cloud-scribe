@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
@@ -48,6 +49,11 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "timestamp": datetime.utcnow()}
 
 # Authentication
 class Token(BaseModel):
@@ -163,12 +169,38 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/auth/login", response_model=Token)
-async def login(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.email == user.email).first()
-    if not db_user or not bcrypt.checkpw(user.password.encode('utf-8'), db_user.hashed_password.encode('utf-8')):
-        raise HTTPException(status_code=400, detail="Invalid credentials")
-    access_token = create_access_token(data={"sub": db_user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
+async def login(user: UserLogin, db: Session = Depends(get_db)):
+    logging.info("Login attempt for email: %s", user.email)
+    try:
+        db_user = db.query(User).filter(User.email == user.email).first()
+        
+        if not db_user:
+            logging.warning("User not found: %s", user.email)
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        
+        if not bcrypt.checkpw(user.password.encode('utf-8'), db_user.hashed_password.encode('utf-8')):
+            logging.warning("Invalid password for user: %s", user.email)
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        
+        access_token = create_access_token(data={"sub": db_user.email})
+        logging.info("Login successful for user: %s", user.email)
+        return {"access_token": access_token, "token_type": "bearer"}
+    except Exception as e:
+        logging.error("Error during login: %s", str(e))
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/user/profile")
+async def get_user_profile(current_user: User = Depends(get_current_user)):
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "username": current_user.username,
+        "subscription_tier": current_user.subscription_tier,
+        "created_at": current_user.created_at,
+        "is_active": current_user.is_active
+    }
 
 @app.get("/pricing/tiers")
 async def get_pricing_tiers(db: Session = Depends(get_db)):

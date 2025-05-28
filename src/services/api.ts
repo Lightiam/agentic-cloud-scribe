@@ -19,13 +19,20 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
   console.log('Making API request to:', config.url, 'with base URL:', config.baseURL);
+  console.log('Full URL:', `${config.baseURL}${config.url}`);
+  console.log('Request data:', config.data);
   return config;
 });
 
 // Add response interceptor for better error handling
 api.interceptors.response.use(
   (response) => {
-    console.log('API response received:', response.config.url, response.status);
+    console.log('API response received:', {
+      url: response.config.url,
+      status: response.status,
+      statusText: response.statusText,
+      data: response.data
+    });
     return response;
   },
   (error) => {
@@ -35,8 +42,15 @@ api.interceptors.response.use(
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
-      message: error.message
+      message: error.message,
+      code: error.code
     });
+    
+    // Check if it's a network error
+    if (error.code === 'ERR_NETWORK' || !error.response) {
+      console.error('Network error - backend may not be running');
+    }
+    
     return Promise.reject(error);
   }
 );
