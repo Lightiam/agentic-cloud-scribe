@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
+import BackendStatus from '../BackendStatus';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -35,6 +36,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMode = 'l
             }
           </p>
         </div>
+
+        <BackendStatus />
 
         {mode === 'login' ? <LoginForm /> : <RegisterForm />}
         
