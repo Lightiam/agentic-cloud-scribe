@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import WorkspaceSidebar from '@/components/workspace/WorkspaceSidebar';
-import PromptInterface from '@/components/workspace/PromptInterface';
+import InfrastructureWorkspace from '@/components/workspace/InfrastructureWorkspace';
 
 const Workspace = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -27,9 +27,7 @@ const Workspace = () => {
         selectedConversation={selectedConversation}
         onSelectConversation={setSelectedConversation}
       />
-      <div className="flex-1">
-        <PromptInterface conversationId={selectedConversation} />
-      </div>
+      <InfrastructureWorkspace />
     </div>
   );
 };
