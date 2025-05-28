@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +12,10 @@ import bcrypt
 import uuid
 import os
 import json
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 
 # Database Configuration
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./test.db")
@@ -127,39 +130,44 @@ Base.metadata.create_all(bind=engine)
 
 @app.post("/auth/register", response_model=Token)
 async def register(user: UserCreate, db: Session = Depends(get_db)):
-    # Check if user exists
-    existing_user = db.query(User).filter(
-        (User.email == user.email) | (User.username == user.username)
-    ).first()
-    
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Email or username already registered")
-    
-    # Hash password
-    hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
-    
-    # Create user
-    db_user = User(
-        email=user.email,
-        username=user.username,
-        hashed_password=hashed_password.decode('utf-8')
-    )
-    
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    
-    access_token = create_access_token(data={"sub": user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
+    logging.info("Registering user: %s", user.email)
+    try:
+        # Check if user exists
+        existing_user = db.query(User).filter(
+            (User.email == user.email) | (User.username == user.username)
+        ).first()
+        
+        if existing_user:
+            logging.warning("User already exists: %s", user.email)
+            raise HTTPException(status_code=400, detail="Email or username already registered")
+        
+        # Hash password
+        hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
+        
+        # Create user
+        db_user = User(
+            email=user.email,
+            username=user.username,
+            hashed_password=hashed_password.decode('utf-8')
+        )
+        
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        
+        access_token = create_access_token(data={"sub": user.email})
+        logging.info("User registered successfully: %s", user.email)
+        return {"access_token": access_token, "token_type": "bearer"}
+    except Exception as e:
+        logging.error("Error during registration: %s", str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/auth/login", response_model=Token)
-async def login(user: UserLogin, db: Session = Depends(get_db)):
+async def login(user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
-    
     if not db_user or not bcrypt.checkpw(user.password.encode('utf-8'), db_user.hashed_password.encode('utf-8')):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-    access_token = create_access_token(data={"sub": user.email})
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+    access_token = create_access_token(data={"sub": db_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.get("/pricing/tiers")
@@ -211,56 +219,6 @@ async def get_pricing_tiers(db: Session = Depends(get_db)):
         }
         for tier in tiers
     ]
-
-@app.get("/user/profile")
-async def get_user_profile(current_user: User = Depends(get_current_user)):
-    return {
-        "id": current_user.id,
-        "email": current_user.email,
-        "username": current_user.username,
-        "subscription_tier": current_user.subscription_tier,
-        "created_at": current_user.created_at,
-        "is_active": current_user.is_active
-    }
-
-@app.get("/dashboard/stats")
-async def get_dashboard_stats(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    total_deployments = db.query(Deployment).filter(Deployment.user_id == current_user.id).count()
-    active_deployments = db.query(Deployment).filter(
-        Deployment.user_id == current_user.id,
-        Deployment.status == "running"
-    ).count()
-    
-    # Mock data for now
-    return {
-        "total_deployments": total_deployments,
-        "active_deployments": active_deployments,
-        "monthly_cost_estimate": 156.78,
-        "subscription_tier": current_user.subscription_tier
-    }
-
-@app.get("/deployments")
-async def get_deployments(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    deployments = db.query(Deployment).filter(Deployment.user_id == current_user.id).all()
-    return [
-        {
-            "deployment_id": d.deployment_id,
-            "prompt": d.prompt,
-            "provider": d.provider,
-            "status": d.status,
-            "cost_estimate": d.cost_estimate,
-            "created_at": d.created_at,
-        }
-        for d in deployments
-    ]
-
-@app.get("/cloud-providers")
-async def get_cloud_providers(current_user: User = Depends(get_current_user)):
-    # Mock data for now
-    return []
 
 if __name__ == "__main__":
     import uvicorn
