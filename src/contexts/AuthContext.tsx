@@ -1,31 +1,13 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI } from '@/services/api';
-
-interface User {
-  id: number;
-  email: string;
-  username: string;
-  subscription_tier: string;
-  created_at: string;
-  is_active: boolean;
-}
-
-interface AuthContextType {
-  user: User | null;
-  token: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, username: string, password: string) => Promise<void>;
-  logout: () => void;
-  isAuthenticated: boolean;
-  loading: boolean;
-}
+import { authUtils, tokenStorage } from '@/utils/authUtils';
+import type { User, AuthContextType } from '@/types/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('access_token'));
+  const [token, setToken] = useState<string | null>(tokenStorage.get());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,9 +20,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserProfile = async () => {
     try {
-      const { userAPI } = await import('@/services/api');
-      const response = await userAPI.getProfile();
-      setUser(response.data);
+      const userData = await authUtils.fetchUserProfile();
+      setUser(userData);
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
       logout();
@@ -51,70 +32,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
-      console.log('AuthContext: Login attempt for:', email);
-      const response = await authAPI.login({ email, password });
-      console.log('AuthContext: Login API response received');
+      const accessToken = await authUtils.performLogin({ email, password });
       
-      const { access_token } = response.data;
-      
-      console.log('AuthContext: Login successful, storing token');
-      localStorage.setItem('access_token', access_token);
-      setToken(access_token);
+      tokenStorage.set(accessToken);
+      setToken(accessToken);
       
       await fetchUserProfile();
     } catch (error: any) {
-      console.error('AuthContext: Login failed:', error);
-      
-      // Enhanced error logging
-      if (error?.response) {
-        console.error('AuthContext: Response error:', {
-          status: error.response.status,
-          statusText: error.response.statusText,
-          data: error.response.data
-        });
-      } else if (error?.request) {
-        console.error('AuthContext: Request error:', error.request);
-      }
-      
+      authUtils.logError('Login', email, error);
       throw error;
     }
   };
 
   const register = async (email: string, username: string, password: string) => {
     try {
-      console.log('AuthContext: Registration attempt for:', { email, username });
-      console.log('AuthContext: API Base URL:', import.meta.env.VITE_API_BASE_URL);
+      const accessToken = await authUtils.performRegister({ email, username, password });
       
-      const response = await authAPI.register({ email, username, password });
-      console.log('AuthContext: Registration API response received');
-      
-      const { access_token } = response.data;
-      
-      console.log('AuthContext: Registration successful, storing token');
-      localStorage.setItem('access_token', access_token);
-      setToken(access_token);
+      tokenStorage.set(accessToken);
+      setToken(accessToken);
       
       await fetchUserProfile();
     } catch (error: any) {
-      console.error('AuthContext: Registration failed:', error);
-      
-      // Enhanced error logging
-      if (error?.response) {
-        console.error('AuthContext: Response error:', {
-          status: error.response.status,
-          statusText: error.response.statusText,
-          data: error.response.data
-        });
-      } else if (error?.request) {
-        console.error('AuthContext: Request error:', error.request);
-      }
-      
+      authUtils.logError('Registration', email, error);
       throw error;
     }
   };
 
   const logout = () => {
-    localStorage.removeItem('access_token');
+    tokenStorage.remove();
     setToken(null);
     setUser(null);
   };
