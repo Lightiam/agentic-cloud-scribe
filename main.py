@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
@@ -50,6 +51,10 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     if expires_delta:
@@ -70,6 +75,12 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+def get_current_user(email: str = Depends(verify_token), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
 # Models
 class User(Base):
     __tablename__ = "users"
@@ -79,6 +90,30 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
+    subscription_tier = Column(String, default="free")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class PricingTier(Base):
+    __tablename__ = "pricing_tiers"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True)
+    price = Column(Float)
+    features = Column(Text)  # JSON array
+    max_deployments = Column(Integer)
+    max_concurrent_instances = Column(Integer)
+    support_level = Column(String)
+
+class Deployment(Base):
+    __tablename__ = "deployments"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    deployment_id = Column(String, unique=True, default=lambda: str(uuid.uuid4()))
+    prompt = Column(Text)
+    provider = Column(String)
+    status = Column(String, default="pending")
+    cost_estimate = Column(Float)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 # Pydantic Models
@@ -86,6 +121,9 @@ class UserCreate(BaseModel):
     email: str
     username: str
     password: str
+
+# Create tables
+Base.metadata.create_all(bind=engine)
 
 @app.post("/auth/register", response_model=Token)
 async def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -113,6 +151,116 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
     
     access_token = create_access_token(data={"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/auth/login", response_model=Token)
+async def login(user: UserLogin, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.email == user.email).first()
+    
+    if not db_user or not bcrypt.checkpw(user.password.encode('utf-8'), db_user.hashed_password.encode('utf-8')):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    access_token = create_access_token(data={"sub": user.email})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/pricing/tiers")
+async def get_pricing_tiers(db: Session = Depends(get_db)):
+    tiers = db.query(PricingTier).all()
+    if not tiers:
+        # Initialize default pricing tiers
+        default_tiers = [
+            PricingTier(
+                name="Basic",
+                price=44.0,
+                features='["Up to 5 deployments", "Email support", "Basic monitoring", "1 concurrent instance"]',
+                max_deployments=5,
+                max_concurrent_instances=1,
+                support_level="email"
+            ),
+            PricingTier(
+                name="Professional",
+                price=74.0,
+                features='["Up to 25 deployments", "Priority support", "Advanced monitoring", "5 concurrent instances", "Multi-cloud", "Auto-scaling"]',
+                max_deployments=25,
+                max_concurrent_instances=5,
+                support_level="priority"
+            ),
+            PricingTier(
+                name="Enterprise",
+                price=94.0,
+                features='["Unlimited deployments", "24/7 phone support", "Custom integrations", "Unlimited concurrent instances", "Dedicated account manager", "SLA guarantee"]',
+                max_deployments=-1,
+                max_concurrent_instances=-1,
+                support_level="phone"
+            )
+        ]
+        
+        for tier in default_tiers:
+            db.add(tier)
+        db.commit()
+        
+        tiers = default_tiers
+    
+    return [
+        {
+            "name": tier.name,
+            "price": tier.price,
+            "features": json.loads(tier.features),
+            "max_deployments": tier.max_deployments,
+            "max_concurrent_instances": tier.max_concurrent_instances,
+            "support_level": tier.support_level
+        }
+        for tier in tiers
+    ]
+
+@app.get("/user/profile")
+async def get_user_profile(current_user: User = Depends(get_current_user)):
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "username": current_user.username,
+        "subscription_tier": current_user.subscription_tier,
+        "created_at": current_user.created_at,
+        "is_active": current_user.is_active
+    }
+
+@app.get("/dashboard/stats")
+async def get_dashboard_stats(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    total_deployments = db.query(Deployment).filter(Deployment.user_id == current_user.id).count()
+    active_deployments = db.query(Deployment).filter(
+        Deployment.user_id == current_user.id,
+        Deployment.status == "running"
+    ).count()
+    
+    # Mock data for now
+    return {
+        "total_deployments": total_deployments,
+        "active_deployments": active_deployments,
+        "monthly_cost_estimate": 156.78,
+        "subscription_tier": current_user.subscription_tier
+    }
+
+@app.get("/deployments")
+async def get_deployments(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    deployments = db.query(Deployment).filter(Deployment.user_id == current_user.id).all()
+    return [
+        {
+            "deployment_id": d.deployment_id,
+            "prompt": d.prompt,
+            "provider": d.provider,
+            "status": d.status,
+            "cost_estimate": d.cost_estimate,
+            "created_at": d.created_at,
+        }
+        for d in deployments
+    ]
+
+@app.get("/cloud-providers")
+async def get_cloud_providers(current_user: User = Depends(get_current_user)):
+    # Mock data for now
+    return []
 
 if __name__ == "__main__":
     import uvicorn
