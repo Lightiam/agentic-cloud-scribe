@@ -12,13 +12,29 @@ const Navigation = () => {
   const { user, logout, isAuthenticated } = useAuth();
 
   const navItems = [
-    { name: "Home", href: "#", active: true },
-    { name: "Pricing Plans", href: "#pricing" }
+    { name: "Home", href: "/", active: window.location.pathname === "/" },
+    { name: "Dashboard", href: "/dashboard", active: window.location.pathname === "/dashboard", authRequired: true },
+    { name: "Pricing Plans", href: "/#pricing", active: false }
   ];
 
   const handleAuthClick = (mode: 'login' | 'register') => {
     setAuthMode(mode);
     setAuthModalOpen(true);
+  };
+
+  const handleNavClick = (href: string) => {
+    if (href.startsWith('/#')) {
+      // Handle anchor links
+      if (window.location.pathname !== '/') {
+        window.location.href = href;
+      } else {
+        const element = document.querySelector(href.substring(1));
+        element?.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      // Handle regular navigation
+      window.location.href = href;
+    }
   };
 
   return (
@@ -39,19 +55,21 @@ const Navigation = () => {
             {/* Desktop Navigation */}
             <div className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-8">
-                {navItems.map((item) => (
-                  <a
-                    key={item.name}
-                    href={item.href}
-                    className={`${
-                      item.active
-                        ? "text-cyan-400 border-b-2 border-cyan-400"
-                        : "text-gray-300 hover:text-cyan-400"
-                    } px-3 py-2 text-sm font-medium transition-colors duration-200`}
-                  >
-                    {item.name}
-                  </a>
-                ))}
+                {navItems
+                  .filter(item => !item.authRequired || isAuthenticated)
+                  .map((item) => (
+                    <button
+                      key={item.name}
+                      onClick={() => handleNavClick(item.href)}
+                      className={`${
+                        item.active
+                          ? "text-cyan-400 border-b-2 border-cyan-400"
+                          : "text-gray-300 hover:text-cyan-400"
+                      } px-3 py-2 text-sm font-medium transition-colors duration-200 border-none bg-transparent`}
+                    >
+                      {item.name}
+                    </button>
+                  ))}
               </div>
             </div>
 
@@ -110,19 +128,21 @@ const Navigation = () => {
         {isOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-slate-800/95 backdrop-blur-sm">
-              {navItems.map((item) => (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  className={`${
-                    item.active
-                      ? "text-cyan-400 bg-slate-700"
-                      : "text-gray-300 hover:text-cyan-400 hover:bg-slate-700"
-                  } block px-3 py-2 text-base font-medium transition-colors duration-200`}
-                >
-                  {item.name}
-                </a>
-              ))}
+              {navItems
+                .filter(item => !item.authRequired || isAuthenticated)
+                .map((item) => (
+                  <button
+                    key={item.name}
+                    onClick={() => handleNavClick(item.href)}
+                    className={`${
+                      item.active
+                        ? "text-cyan-400 bg-slate-700"
+                        : "text-gray-300 hover:text-cyan-400 hover:bg-slate-700"
+                    } block px-3 py-2 text-base font-medium transition-colors duration-200 w-full text-left border-none bg-transparent`}
+                  >
+                    {item.name}
+                  </button>
+                ))}
               {!isAuthenticated && (
                 <div className="flex flex-col space-y-2 px-3 pt-4">
                   <Button
