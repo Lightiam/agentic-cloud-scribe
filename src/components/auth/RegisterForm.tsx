@@ -43,11 +43,17 @@ const RegisterForm = () => {
       console.error('Registration failed:', error);
       
       let errorMessage = 'Registration failed. Please try again.';
+      let actionSuggestion = '';
       
       // Extract meaningful error message
       if (error?.response?.data?.detail) {
         if (typeof error.response.data.detail === 'string') {
           errorMessage = error.response.data.detail;
+          
+          // Special handling for duplicate user
+          if (errorMessage.includes('already registered')) {
+            actionSuggestion = ' Try logging in instead or use a different email/username.';
+          }
         } else if (Array.isArray(error.response.data.detail)) {
           errorMessage = error.response.data.detail.map((err: any) => 
             typeof err === 'string' ? err : err.msg || 'Validation error'
@@ -59,7 +65,7 @@ const RegisterForm = () => {
       
       toast({
         title: "Registration Failed",
-        description: errorMessage,
+        description: errorMessage + actionSuggestion,
         variant: "destructive",
       });
     } finally {
@@ -86,6 +92,7 @@ const RegisterForm = () => {
           onChange={handleChange}
           required
           className="bg-slate-700 border-slate-600 text-white"
+          placeholder="Enter your email"
         />
       </div>
 
@@ -99,6 +106,7 @@ const RegisterForm = () => {
           onChange={handleChange}
           required
           className="bg-slate-700 border-slate-600 text-white"
+          placeholder="Choose a username"
         />
       </div>
 
@@ -112,6 +120,7 @@ const RegisterForm = () => {
           onChange={handleChange}
           required
           className="bg-slate-700 border-slate-600 text-white"
+          placeholder="Create a password"
         />
       </div>
 
@@ -125,6 +134,7 @@ const RegisterForm = () => {
           onChange={handleChange}
           required
           className="bg-slate-700 border-slate-600 text-white"
+          placeholder="Confirm your password"
         />
       </div>
 
