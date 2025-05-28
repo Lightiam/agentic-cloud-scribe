@@ -1,92 +1,68 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Bot, Cloud, Code, Shield, Zap, Terminal, ArrowRight } from "lucide-react";
-
 const Features = () => {
   const features = [
     {
-      icon: <Code className="w-8 h-8" />,
-      title: "Natural Language to IaC",
-      description: "Convert plain English descriptions into production-ready Pulumi code across AWS, Azure, and GCP",
-      badge: "AI-Powered"
+      title: "Natural Language Processing",
+      description: "Convert plain English commands into sophisticated Infrastructure as Code templates",
+      gradient: "from-cyan-400 to-blue-500"
     },
     {
-      icon: <Cloud className="w-8 h-8" />,
-      title: "Multi-Cloud Orchestration",
-      description: "Seamlessly provision and manage infrastructure across multiple cloud providers with unified APIs",
-      badge: "Cross-Platform"
+      title: "Multi-Cloud Support", 
+      description: "Deploy seamlessly across AWS, Azure, and Google Cloud Platform with unified management",
+      gradient: "from-purple-400 to-pink-500"
     },
     {
-      icon: <Shield className="w-8 h-8" />,
-      title: "Security-First Design",
-      description: "Built-in security controls with OAuth 2.0, HashiCorp Vault integration, and cloud-native RBAC",
-      badge: "Enterprise-Ready"
+      title: "AI-Powered Validation",
+      description: "Intelligent pre-deployment validation and security compliance checking",
+      gradient: "from-green-400 to-teal-500"
     },
     {
-      icon: <Bot className="w-8 h-8" />,
-      title: "Intelligent Validation",
-      description: "AI-powered code validation and cost optimization with automated testing and preview capabilities",
-      badge: "Smart"
-    },
-    {
-      icon: <Zap className="w-8 h-8" />,
-      title: "Real-time Monitoring",
-      description: "Complete observability with OpenTelemetry integration and comprehensive audit trails",
-      badge: "Observable"
-    },
-    {
-      icon: <Terminal className="w-8 h-8" />,
-      title: "CLI & API Access",
-      description: "Powerful command-line interface and RESTful APIs for seamless developer workflow integration",
-      badge: "Developer-Friendly"
+      title: "Cost Optimization",
+      description: "Automated resource sizing and cost management across all cloud providers",
+      gradient: "from-orange-400 to-red-500"
     }
   ];
 
   return (
-    <section id="features" className="py-20 px-6">
-      <div className="container mx-auto">
+    <section className="py-20 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <Badge className="mb-4 bg-blue-900/50 text-blue-200 border-blue-700">
-            SERVICES
-          </Badge>
+          <div className="inline-block mb-4">
+            <span className="text-cyan-400 text-sm font-semibold tracking-wider uppercase">
+              • FEATURES •
+            </span>
+          </div>
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Services We Offer
+            Powerful AI-Driven Features
           </h2>
-          <p className="text-xl text-blue-200 max-w-2xl mx-auto">
-            Comprehensive AI-driven infrastructure automation with enterprise-grade security and multi-cloud support
+          <p className="text-gray-300 text-lg max-w-3xl mx-auto">
+            Experience the future of infrastructure management with our cutting-edge AI capabilities
           </p>
-          <Button className="mt-8 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600">
-            See All Services
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+        <div className="grid md:grid-cols-2 gap-8">
           {features.map((feature, index) => (
-            <Card key={index} className="bg-slate-800/50 border-blue-800/30 hover:border-blue-600/50 transition-all duration-300 group">
-              <CardHeader>
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <div className="text-blue-400">
-                    {feature.icon}
-                  </div>
-                </div>
-                <Badge className="w-fit mb-2 bg-blue-900/50 text-blue-200 border-blue-700">
-                  {feature.badge}
-                </Badge>
-                <CardTitle className="text-white">{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-blue-200 mb-4">
-                  {feature.description}
-                </CardDescription>
-                <Button variant="link" className="text-cyan-400 hover:text-cyan-300 p-0">
-                  Read More
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </Button>
-              </CardContent>
-            </Card>
+            <div 
+              key={index}
+              className="group relative bg-gradient-to-br from-slate-800/30 to-slate-900/30 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8 hover:border-cyan-400/30 transition-all duration-300"
+            >
+              {/* Feature Number */}
+              <div className={`w-12 h-12 bg-gradient-to-r ${feature.gradient} rounded-xl flex items-center justify-center mb-6`}>
+                <span className="text-white font-bold text-lg">{String(index + 1).padStart(2, '0')}</span>
+              </div>
+              
+              {/* Feature Content */}
+              <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-cyan-400 transition-colors">
+                {feature.title}
+              </h3>
+              
+              <p className="text-gray-300 leading-relaxed">
+                {feature.description}
+              </p>
+
+              {/* Hover Effect Background */}
+              <div className={`absolute inset-0 bg-gradient-to-r ${feature.gradient} opacity-0 group-hover:opacity-5 rounded-2xl transition-opacity duration-300 pointer-events-none`}></div>
+            </div>
           ))}
         </div>
       </div>
