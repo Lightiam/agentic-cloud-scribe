@@ -30,7 +30,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     if (token) {
-      // Fetch user profile on mount if token exists
       fetchUserProfile();
     } else {
       setLoading(false);
@@ -52,40 +51,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
-      console.log('Login attempt for:', email);
+      console.log('AuthContext: Login attempt for:', email);
       const response = await authAPI.login({ email, password });
+      console.log('AuthContext: Login API response received');
+      
       const { access_token } = response.data;
       
-      console.log('Login successful, token received');
+      console.log('AuthContext: Login successful, storing token');
       localStorage.setItem('access_token', access_token);
       setToken(access_token);
       
-      // Fetch user profile after login
       await fetchUserProfile();
-    } catch (error) {
-      console.error('Login failed:', error);
+    } catch (error: any) {
+      console.error('AuthContext: Login failed:', error);
+      
+      // Enhanced error logging
+      if (error?.response) {
+        console.error('AuthContext: Response error:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data
+        });
+      } else if (error?.request) {
+        console.error('AuthContext: Request error:', error.request);
+      }
+      
       throw error;
     }
   };
 
   const register = async (email: string, username: string, password: string) => {
     try {
-      console.log('API Base URL:', import.meta.env.VITE_API_BASE_URL);
-      console.log('Register attempt for:', { email, username });
+      console.log('AuthContext: Registration attempt for:', { email, username });
+      console.log('AuthContext: API Base URL:', import.meta.env.VITE_API_BASE_URL);
       
       const response = await authAPI.register({ email, username, password });
-      console.log('Registration API response:', response);
+      console.log('AuthContext: Registration API response received');
       
       const { access_token } = response.data;
       
-      console.log('Registration successful, token received');
+      console.log('AuthContext: Registration successful, storing token');
       localStorage.setItem('access_token', access_token);
       setToken(access_token);
       
-      // Fetch user profile after registration
       await fetchUserProfile();
-    } catch (error) {
-      console.error('Registration failed in AuthContext:', error);
+    } catch (error: any) {
+      console.error('AuthContext: Registration failed:', error);
+      
+      // Enhanced error logging
+      if (error?.response) {
+        console.error('AuthContext: Response error:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data
+        });
+      } else if (error?.request) {
+        console.error('AuthContext: Request error:', error.request);
+      }
+      
       throw error;
     }
   };
