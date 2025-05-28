@@ -14,9 +14,11 @@ import uuid
 import os
 import json
 import logging
+import traceback
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Database Configuration
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./test.db")
@@ -40,9 +42,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Database Setup
-Base.metadata.create_all(bind=engine)
-
 def get_db():
     db = SessionLocal()
     try:
@@ -54,41 +53,6 @@ def get_db():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.utcnow()}
-
-# Authentication
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-class UserLogin(BaseModel):
-    email: str
-    password: str
-
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        return email
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-def get_current_user(email: str = Depends(verify_token), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
 
 # Models
 class User(Base):
@@ -131,12 +95,48 @@ class UserCreate(BaseModel):
     username: str
     password: str
 
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
 # Create tables
 Base.metadata.create_all(bind=engine)
 
+# Authentication functions
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return email
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+def get_current_user(email: str = Depends(verify_token), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
 @app.post("/auth/register", response_model=Token)
 async def register(user: UserCreate, db: Session = Depends(get_db)):
-    logging.info("Registering user: %s", user.email)
+    logger.info(f"Registration attempt for email: {user.email}")
+    
     try:
         # Check if user exists
         existing_user = db.query(User).filter(
@@ -144,11 +144,15 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
         ).first()
         
         if existing_user:
-            logging.warning("User already exists: %s", user.email)
+            logger.warning(f"User already exists: {user.email}")
             raise HTTPException(status_code=400, detail="Email or username already registered")
         
         # Hash password
-        hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
+        password_bytes = user.password.encode('utf-8')
+        salt = bcrypt.gensalt()
+        hashed_password = bcrypt.hashpw(password_bytes, salt)
+        
+        logger.info(f"Password hashed successfully for {user.email}")
         
         # Create user
         db_user = User(
@@ -161,35 +165,52 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(db_user)
         
+        logger.info(f"User created successfully in database: {user.email}")
+        
         access_token = create_access_token(data={"sub": user.email})
-        logging.info("User registered successfully: %s", user.email)
+        logger.info(f"Access token created for: {user.email}")
+        
         return {"access_token": access_token, "token_type": "bearer"}
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
-        logging.error("Error during registration: %s", str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Unexpected error during registration for {user.email}: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
 
 @app.post("/auth/login", response_model=Token)
 async def login(user: UserLogin, db: Session = Depends(get_db)):
-    logging.info("Login attempt for email: %s", user.email)
+    logger.info(f"Login attempt for email: {user.email}")
+    
     try:
         db_user = db.query(User).filter(User.email == user.email).first()
         
         if not db_user:
-            logging.warning("User not found: %s", user.email)
-            raise HTTPException(status_code=401, detail="Invalid credentials")
+            logger.warning(f"User not found: {user.email}")
+            raise HTTPException(status_code=401, detail="Invalid email or password")
         
-        if not bcrypt.checkpw(user.password.encode('utf-8'), db_user.hashed_password.encode('utf-8')):
-            logging.warning("Invalid password for user: %s", user.email)
-            raise HTTPException(status_code=401, detail="Invalid credentials")
+        # Check password
+        password_bytes = user.password.encode('utf-8')
+        stored_hash = db_user.hashed_password.encode('utf-8')
+        
+        if not bcrypt.checkpw(password_bytes, stored_hash):
+            logger.warning(f"Invalid password for user: {user.email}")
+            raise HTTPException(status_code=401, detail="Invalid email or password")
         
         access_token = create_access_token(data={"sub": db_user.email})
-        logging.info("Login successful for user: %s", user.email)
+        logger.info(f"Login successful for user: {user.email}")
+        
         return {"access_token": access_token, "token_type": "bearer"}
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
-        logging.error("Error during login: %s", str(e))
-        if isinstance(e, HTTPException):
-            raise e
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Unexpected error during login for {user.email}: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
 
 @app.get("/user/profile")
 async def get_user_profile(current_user: User = Depends(get_current_user)):
@@ -254,4 +275,5 @@ async def get_pricing_tiers(db: Session = Depends(get_db)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    logger.info("Starting Storm Platform API server...")
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
