@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,7 @@ const RegisterForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +40,9 @@ const RegisterForm = () => {
         title: "Success",
         description: "Account created successfully!",
       });
+      
+      // Redirect to dashboard after successful registration
+      navigate('/dashboard');
     } catch (error: any) {
       console.error('Registration failed:', error);
       
