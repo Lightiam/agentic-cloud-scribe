@@ -1,15 +1,23 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+// Check if we're in development and prefer localhost
+const isDevelopment = import.meta.env.DEV;
+const envApiUrl = import.meta.env.VITE_API_BASE_URL;
 
-console.log('API Base URL configured as:', API_BASE_URL);
+// Use localhost in development if no specific API URL is set, otherwise use the env variable
+const API_BASE_URL = isDevelopment && !envApiUrl ? 'http://localhost:5000' : envApiUrl || 'http://localhost:5000';
+
+console.log('Environment:', isDevelopment ? 'development' : 'production');
+console.log('VITE_API_BASE_URL from env:', envApiUrl);
+console.log('Final API Base URL configured as:', API_BASE_URL);
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10 second timeout
 });
 
 // Add auth token to requests
@@ -48,7 +56,8 @@ api.interceptors.response.use(
     
     // Check if it's a network error
     if (error.code === 'ERR_NETWORK' || !error.response) {
-      console.error('Network error - backend may not be running');
+      console.error('Network error - backend may not be running at:', API_BASE_URL);
+      console.error('Try starting the backend server with: npm run dev in the backend directory');
     }
     
     return Promise.reject(error);
