@@ -9,7 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 const chartConfig = {
   deployments: {
     label: "Deployments",
-    color: "#3b82f6",
+    color: "#607afb",
   },
 };
 
@@ -39,13 +39,13 @@ const DeploymentChart = () => {
 
   if (isLoading) {
     return (
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card>
         <CardHeader>
           <CardTitle className="text-white">Deployment Activity</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[300px] flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#607afb]"></div>
           </div>
         </CardContent>
       </Card>
@@ -53,7 +53,7 @@ const DeploymentChart = () => {
   }
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700">
+    <Card>
       <CardHeader>
         <CardTitle className="text-white">Deployment Activity</CardTitle>
       </CardHeader>
@@ -63,13 +63,13 @@ const DeploymentChart = () => {
             <BarChart data={chartData}>
               <XAxis 
                 dataKey="date" 
-                stroke="#94a3b8"
+                stroke="#8e99cc"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
               />
               <YAxis 
-                stroke="#94a3b8"
+                stroke="#8e99cc"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
@@ -77,7 +77,7 @@ const DeploymentChart = () => {
               <ChartTooltip content={<ChartTooltipContent />} />
               <Bar 
                 dataKey="deployments" 
-                fill="var(--color-deployments)" 
+                fill="#607afb" 
                 radius={[4, 4, 0, 0]}
               />
             </BarChart>

@@ -41,16 +41,16 @@ const Navigation = () => {
 
   return (
     <>
-      <nav className="relative z-50 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700/50">
+      <nav className="relative z-50 bg-[#101323] border-b border-[#2f396a]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-[#607afb] rounded-xl flex items-center justify-center">
                   <span className="text-white font-bold text-sm">&lt;/&gt;</span>
                 </div>
-                <span className="text-white font-bold text-xl">Instatiate.dev</span>
+                <span className="text-white font-bold text-xl">Agentic Cloud</span>
               </div>
             </div>
 
@@ -65,8 +65,8 @@ const Navigation = () => {
                       onClick={() => handleNavClick(item.href)}
                       className={`${
                         item.active
-                          ? "text-cyan-400 border-b-2 border-cyan-400"
-                          : "text-gray-300 hover:text-cyan-400"
+                          ? "text-[#607afb] border-b-2 border-[#607afb]"
+                          : "text-[#8e99cc] hover:text-white"
                       } px-3 py-2 text-sm font-medium transition-colors duration-200 border-none bg-transparent`}
                     >
                       {item.name}
@@ -77,7 +77,7 @@ const Navigation = () => {
 
             {/* Auth and Mobile menu */}
             <div className="flex items-center space-x-4">
-              <button className="text-gray-300 hover:text-white transition-colors">
+              <button className="text-[#8e99cc] hover:text-white transition-colors">
                 <Search className="h-5 w-5" />
               </button>
 
@@ -85,13 +85,13 @@ const Navigation = () => {
               {isAuthenticated ? (
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
-                    <User className="h-5 w-5 text-cyan-400" />
+                    <User className="h-5 w-5 text-[#607afb]" />
                     <span className="text-white text-sm hidden sm:block">{user?.username}</span>
                   </div>
                   <Button
                     onClick={logout}
-                    variant="outline"
-                    className="text-gray-300 border-gray-600 hover:bg-slate-700 hidden sm:block"
+                    variant="cloudSecondary"
+                    className="hidden sm:block"
                   >
                     Logout
                   </Button>
@@ -100,14 +100,13 @@ const Navigation = () => {
                 <div className="hidden md:flex items-center space-x-3">
                   <Button
                     onClick={() => handleAuthClick('login')}
-                    variant="ghost"
-                    className="text-gray-300 hover:text-white"
+                    variant="cloudSecondary"
                   >
                     Login
                   </Button>
                   <Button
                     onClick={() => handleAuthClick('register')}
-                    className="bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600"
+                    variant="cloud"
                   >
                     Sign Up
                   </Button>
@@ -117,7 +116,7 @@ const Navigation = () => {
               <div className="md:hidden">
                 <button
                   onClick={() => setIsOpen(!isOpen)}
-                  className="text-gray-300 hover:text-white"
+                  className="text-[#8e99cc] hover:text-white"
                 >
                   {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                 </button>
@@ -129,7 +128,7 @@ const Navigation = () => {
         {/* Mobile menu */}
         {isOpen && (
           <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-slate-800/95 backdrop-blur-sm">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-[#181d35]">
               {navItems
                 .filter(item => !item.authRequired || isAuthenticated)
                 .map((item) => (
@@ -138,8 +137,8 @@ const Navigation = () => {
                     onClick={() => handleNavClick(item.href)}
                     className={`${
                       item.active
-                        ? "text-cyan-400 bg-slate-700"
-                        : "text-gray-300 hover:text-cyan-400 hover:bg-slate-700"
+                        ? "text-[#607afb] bg-[#21284a]"
+                        : "text-[#8e99cc] hover:text-white hover:bg-[#21284a]"
                     } block px-3 py-2 text-base font-medium transition-colors duration-200 w-full text-left border-none bg-transparent`}
                   >
                     {item.name}
@@ -149,14 +148,15 @@ const Navigation = () => {
                 <div className="flex flex-col space-y-2 px-3 pt-4">
                   <Button
                     onClick={() => handleAuthClick('login')}
-                    variant="ghost"
-                    className="text-gray-300 hover:text-white justify-start"
+                    variant="cloudSecondary"
+                    className="justify-start"
                   >
                     Login
                   </Button>
                   <Button
                     onClick={() => handleAuthClick('register')}
-                    className="bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 justify-start"
+                    variant="cloud"
+                    className="justify-start"
                   >
                     Sign Up
                   </Button>

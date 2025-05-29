@@ -9,15 +9,15 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 const chartConfig = {
   aws: {
     label: "AWS",
-    color: "#ff9500",
+    color: "#607afb",
   },
   azure: {
     label: "Azure",
-    color: "#0078d4",
+    color: "#4a62d3",
   },
   gcp: {
     label: "GCP",
-    color: "#4285f4",
+    color: "#8e99cc",
   },
 };
 
@@ -42,19 +42,19 @@ const CostAnalytics = () => {
     return Object.entries(costs).map(([provider, cost]) => ({
       name: provider.toUpperCase(),
       value: Number(cost),
-      fill: chartConfig[provider as keyof typeof chartConfig]?.color || '#6b7280',
+      fill: chartConfig[provider as keyof typeof chartConfig]?.color || '#8e99cc',
     }));
   }, [deployments]);
 
   if (isLoading) {
     return (
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card>
         <CardHeader>
           <CardTitle className="text-white">Cost by Provider</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[300px] flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#607afb]"></div>
           </div>
         </CardContent>
       </Card>
@@ -62,7 +62,7 @@ const CostAnalytics = () => {
   }
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700">
+    <Card>
       <CardHeader>
         <CardTitle className="text-white">Cost by Provider</CardTitle>
       </CardHeader>
@@ -85,7 +85,7 @@ const CostAnalytics = () => {
               </Pie>
               <ChartTooltip content={<ChartTooltipContent />} />
               <Legend 
-                wrapperStyle={{ color: '#fff' }}
+                wrapperStyle={{ color: '#8e99cc' }}
                 formatter={(value) => `${value}`}
               />
             </PieChart>

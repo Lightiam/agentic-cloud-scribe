@@ -13,8 +13,8 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-cyan-400"></div>
+      <div className="min-h-screen bg-[#101323] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#607afb]"></div>
       </div>
     );
   }
@@ -24,12 +24,12 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-[#101323]">
       <Navigation />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
-          <p className="text-gray-300">Monitor your infrastructure deployments and analytics</p>
+          <h1 className="text-[32px] font-bold text-white mb-2 tracking-light leading-tight">Dashboard</h1>
+          <p className="text-[#8e99cc] text-sm">Monitor your infrastructure deployments and analytics</p>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
