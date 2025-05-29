@@ -6,7 +6,7 @@ const isDevelopment = import.meta.env.DEV;
 const envApiUrl = import.meta.env.VITE_API_BASE_URL;
 
 // Use localhost in development if no specific API URL is set, otherwise use the env variable
-const API_BASE_URL = isDevelopment && !envApiUrl ? 'http://localhost:5000' : envApiUrl || 'http://localhost:5000';
+const API_BASE_URL = envApiUrl || 'http://localhost:5000';
 
 console.log('Environment:', isDevelopment ? 'development' : 'production');
 console.log('VITE_API_BASE_URL from env:', envApiUrl);
@@ -28,7 +28,6 @@ api.interceptors.request.use((config) => {
   }
   console.log('Making API request to:', config.url, 'with base URL:', config.baseURL);
   console.log('Full URL:', `${config.baseURL}${config.url}`);
-  console.log('Request data:', config.data);
   return config;
 });
 
@@ -57,7 +56,9 @@ api.interceptors.response.use(
     // Check if it's a network error
     if (error.code === 'ERR_NETWORK' || !error.response) {
       console.error('Network error - backend may not be running at:', API_BASE_URL);
-      console.error('Try starting the backend server with: npm run dev in the backend directory');
+      console.error('To start the backend server:');
+      console.error('1. Run: cd backend && npm run dev');
+      console.error('2. Or use the startup scripts: ./start_backend.sh (Linux/Mac) or start_backend.bat (Windows)');
     }
     
     return Promise.reject(error);

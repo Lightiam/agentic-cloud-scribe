@@ -30,7 +30,7 @@ export const authUtils = {
       console.error('AuthUtils: Login failed:', error);
       
       if (error.code === 'ERR_NETWORK' || !error.response) {
-        throw new Error('Unable to connect to server. Please check if the backend is running on http://localhost:8000');
+        throw new Error('Unable to connect to server. Please start the backend server on http://localhost:5000');
       }
       
       if (error.response?.status === 500) {
@@ -46,7 +46,6 @@ export const authUtils = {
       email: credentials.email, 
       username: credentials.username 
     });
-    console.log('AuthUtils: API Base URL:', import.meta.env.VITE_API_BASE_URL);
     
     try {
       const response = await authAPI.register(credentials);
@@ -60,7 +59,7 @@ export const authUtils = {
       console.error('AuthUtils: Registration failed:', error);
       
       if (error.code === 'ERR_NETWORK' || !error.response) {
-        throw new Error('Unable to connect to server. Please check if the backend is running on http://localhost:8000');
+        throw new Error('Unable to connect to server. Please start the backend server on http://localhost:5000');
       }
       
       if (error.response?.status === 500) {
