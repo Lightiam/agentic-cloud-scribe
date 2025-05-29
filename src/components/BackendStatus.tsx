@@ -35,17 +35,17 @@ const BackendStatus = () => {
   }
 
   return (
-    <Alert className="mb-4 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20">
+    <Alert className="mb-4 border-[#607afb] bg-[#21284a]">
       <div className="flex items-center space-x-2">
         {status === 'checking' ? (
-          <AlertCircle className="h-4 w-4 text-yellow-600" />
+          <AlertCircle className="h-4 w-4 text-[#607afb]" />
         ) : (
-          <XCircle className="h-4 w-4 text-red-600" />
+          <XCircle className="h-4 w-4 text-red-500" />
         )}
-        <AlertDescription className="text-sm">
+        <AlertDescription className="text-sm text-white">
           {status === 'checking' 
             ? 'Checking backend connection...'
-            : 'Backend server is not responding. Please start the backend server on http://localhost:8000'
+            : 'Backend server is not responding. Please start the backend server on http://localhost:5000'
           }
         </AlertDescription>
       </div>

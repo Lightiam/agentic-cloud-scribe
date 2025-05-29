@@ -16,29 +16,29 @@ const DashboardStats = () => {
       title: 'Total Deployments',
       value: stats?.data?.total_deployments || 0,
       icon: Server,
-      color: 'text-blue-400',
-      bgColor: 'bg-blue-400/10',
+      color: 'text-white',
+      bgColor: 'bg-[#607afb]',
     },
     {
       title: 'Active Instances',
       value: stats?.data?.active_deployments || 0,
       icon: Activity,
-      color: 'text-green-400',
-      bgColor: 'bg-green-400/10',
+      color: 'text-white',
+      bgColor: 'bg-[#4a62d3]',
     },
     {
       title: 'Monthly Cost',
-      value: `$${stats?.data?.monthly_cost_estimate || 0}`,
+      value: `$${stats?.data?.total_cost || 0}`,
       icon: DollarSign,
-      color: 'text-yellow-400',
-      bgColor: 'bg-yellow-400/10',
+      color: 'text-white',
+      bgColor: 'bg-[#607afb]',
     },
     {
-      title: 'Subscription',
-      value: stats?.data?.subscription_tier || 'Free',
+      title: 'Cloud Providers',
+      value: stats?.data?.total_providers || 0,
       icon: Clock,
-      color: 'text-purple-400',
-      bgColor: 'bg-purple-400/10',
+      color: 'text-white',
+      bgColor: 'bg-[#4a62d3]',
     },
   ];
 
@@ -46,11 +46,11 @@ const DashboardStats = () => {
     return (
       <>
         {[...Array(4)].map((_, i) => (
-          <Card key={i} className="bg-slate-800/50 border-slate-700">
+          <Card key={i}>
             <CardContent className="p-6">
               <div className="animate-pulse">
-                <div className="h-4 bg-slate-700 rounded w-3/4 mb-2"></div>
-                <div className="h-8 bg-slate-700 rounded w-1/2"></div>
+                <div className="h-4 bg-[#21284a] rounded-xl w-3/4 mb-2"></div>
+                <div className="h-8 bg-[#21284a] rounded-xl w-1/2"></div>
               </div>
             </CardContent>
           </Card>
@@ -62,12 +62,12 @@ const DashboardStats = () => {
   return (
     <>
       {statCards.map((stat, index) => (
-        <Card key={index} className="bg-slate-800/50 border-slate-700 hover:bg-slate-800/70 transition-colors">
+        <Card key={index}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300">
+            <CardTitle className="text-sm font-medium text-[#8e99cc]">
               {stat.title}
             </CardTitle>
-            <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+            <div className={`p-2 rounded-xl ${stat.bgColor}`}>
               <stat.icon className={`h-4 w-4 ${stat.color}`} />
             </div>
           </CardHeader>
