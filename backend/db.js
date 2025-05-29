@@ -1,24 +1,49 @@
 const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'instant8-secret-key';
+const JWT_EXPIRES_IN = '24h';
 
 const inMemoryDb = {
+  users: [],
   deployments: [],
   cloudProviders: [],
   userSettings: []
 };
 
 const initInMemoryDb = () => {
+  if (inMemoryDb.users.length === 0) {
+    const salt = bcrypt.genSaltSync(10);
+    const hashedPassword = bcrypt.hashSync('password123', salt);
+    
+    inMemoryDb.users.push({
+      id: 1,
+      email: 'user@example.com',
+      username: 'demo_user',
+      hashed_password: hashedPassword,
+      is_active: true,
+      subscription_tier: 'free',
+      created_at: new Date().toISOString()
+    });
+    
+    console.log('Created default user in memory');
+  }
+
   if (inMemoryDb.cloudProviders.length === 0) {
+    const defaultUserId = inMemoryDb.users[0].id;
     inMemoryDb.cloudProviders = [
-      { id: 1, name: 'aws', enabled: true, user_id: 'demo-user', credentials: {}, regions: ['us-east-1', 'us-west-1', 'eu-west-1'] },
-      { id: 2, name: 'azure', enabled: true, user_id: 'demo-user', credentials: {}, regions: ['eastus', 'westus', 'westeurope'] },
-      { id: 3, name: 'gcp', enabled: true, user_id: 'demo-user', credentials: {}, regions: ['us-central1', 'us-east1', 'europe-west1'] }
+      { id: 1, name: 'aws', enabled: true, user_id: defaultUserId, credentials: {}, regions: ['us-east-1', 'us-west-1', 'eu-west-1'] },
+      { id: 2, name: 'azure', enabled: true, user_id: defaultUserId, credentials: {}, regions: ['eastus', 'westus', 'westeurope'] },
+      { id: 3, name: 'gcp', enabled: true, user_id: defaultUserId, credentials: {}, regions: ['us-central1', 'us-east1', 'europe-west1'] }
     ];
   }
   
   if (inMemoryDb.userSettings.length === 0) {
+    const defaultUserId = inMemoryDb.users[0].id;
     inMemoryDb.userSettings.push({
       id: 1,
-      user_id: 'demo-user',
+      user_id: defaultUserId,
       theme: 'light',
       notifications_enabled: true,
       email_notifications: true,
@@ -425,12 +450,24 @@ const initDatabase = async () => {
     client = await getClient();
     
     await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        username VARCHAR(100) NOT NULL UNIQUE,
+        hashed_password VARCHAR(255) NOT NULL,
+        is_active BOOLEAN DEFAULT true,
+        subscription_tier VARCHAR(50) DEFAULT 'free',
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    
+    await client.query(`
       CREATE TABLE IF NOT EXISTS deployments (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT,
         status VARCHAR(50) NOT NULL,
-        user_id VARCHAR(255) NOT NULL,
+        user_id INTEGER NOT NULL REFERENCES users(id),
         providers JSONB NOT NULL,
         config JSONB NOT NULL,
         cost_estimate JSONB,
@@ -447,7 +484,7 @@ const initDatabase = async () => {
         enabled BOOLEAN DEFAULT true,
         credentials JSONB,
         regions JSONB,
-        user_id VARCHAR(255) NOT NULL,
+        user_id INTEGER NOT NULL REFERENCES users(id),
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )
@@ -456,7 +493,7 @@ const initDatabase = async () => {
     await client.query(`
       CREATE TABLE IF NOT EXISTS user_settings (
         id SERIAL PRIMARY KEY,
-        user_id VARCHAR(255) NOT NULL UNIQUE,
+        user_id INTEGER NOT NULL UNIQUE REFERENCES users(id),
         theme VARCHAR(50) DEFAULT 'light',
         notifications_enabled BOOLEAN DEFAULT true,
         email_notifications BOOLEAN DEFAULT true,
@@ -468,6 +505,20 @@ const initDatabase = async () => {
       )
     `);
     
+    const userResult = await client.query('SELECT COUNT(*) FROM users');
+    if (parseInt(userResult.rows[0].count) === 0) {
+      const salt = bcrypt.genSaltSync(10);
+      const hashedPassword = bcrypt.hashSync('password123', salt);
+      
+      await client.query(
+        `INSERT INTO users (email, username, hashed_password) 
+         VALUES ($1, $2, $3)`,
+        ['user@example.com', 'demo_user', hashedPassword]
+      );
+      
+      console.log('Created default user in database');
+    }
+    
     console.log('Database tables initialized successfully');
     return true;
   } catch (err) {
@@ -475,6 +526,167 @@ const initDatabase = async () => {
     return false;
   } finally {
     if (client) client.release();
+  }
+};
+
+const userQueries = {
+  registerUser: async (email, username, password) => {
+    const salt = bcrypt.genSaltSync(10);
+    const hashedPassword = bcrypt.hashSync(password, salt);
+    
+    if (usingInMemory) {
+      const existingUser = inMemoryDb.users.find(
+        u => u.email === email || u.username === username
+      );
+      
+      if (existingUser) {
+        throw new Error('User with this email or username already exists');
+      }
+      
+      const newUser = {
+        id: inMemoryDb.users.length + 1,
+        email,
+        username,
+        hashed_password: hashedPassword,
+        is_active: true,
+        subscription_tier: 'free',
+        created_at: new Date().toISOString()
+      };
+      
+      inMemoryDb.users.push(newUser);
+      console.log('Registered user in memory:', newUser.id);
+      
+      const token = jwt.sign(
+        { user_id: newUser.id, email: newUser.email },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRES_IN }
+      );
+      
+      return { user: { ...newUser, hashed_password: undefined }, token };
+    }
+    
+    let client;
+    try {
+      client = await getClient();
+      
+      const existingUser = await client.query(
+        'SELECT * FROM users WHERE email = $1 OR username = $2',
+        [email, username]
+      );
+      
+      if (existingUser.rows.length > 0) {
+        throw new Error('User with this email or username already exists');
+      }
+      
+      const result = await client.query(
+        `INSERT INTO users (email, username, hashed_password) 
+         VALUES ($1, $2, $3) 
+         RETURNING id, email, username, is_active, subscription_tier, created_at`,
+        [email, username, hashedPassword]
+      );
+      
+      const newUser = result.rows[0];
+      
+      const token = jwt.sign(
+        { user_id: newUser.id, email: newUser.email },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRES_IN }
+      );
+      
+      return { user: newUser, token };
+    } catch (err) {
+      console.error('Error registering user:', err);
+      throw err;
+    } finally {
+      if (client) client.release();
+    }
+  },
+  
+  loginUser: async (email, password) => {
+    if (usingInMemory) {
+      const user = inMemoryDb.users.find(u => u.email === email);
+      
+      if (!user || !bcrypt.compareSync(password, user.hashed_password)) {
+        throw new Error('Invalid email or password');
+      }
+      
+      const token = jwt.sign(
+        { user_id: user.id, email: user.email },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRES_IN }
+      );
+      
+      return { user: { ...user, hashed_password: undefined }, token };
+    }
+    
+    let client;
+    try {
+      client = await getClient();
+      const result = await client.query(
+        'SELECT * FROM users WHERE email = $1',
+        [email]
+      );
+      
+      if (result.rows.length === 0) {
+        throw new Error('Invalid email or password');
+      }
+      
+      const user = result.rows[0];
+      
+      if (!bcrypt.compareSync(password, user.hashed_password)) {
+        throw new Error('Invalid email or password');
+      }
+      
+      const token = jwt.sign(
+        { user_id: user.id, email: user.email },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRES_IN }
+      );
+      
+      delete user.hashed_password;
+      
+      return { user, token };
+    } catch (err) {
+      console.error('Error logging in user:', err);
+      throw err;
+    } finally {
+      if (client) client.release();
+    }
+  },
+  
+  getUserById: async (id) => {
+    if (usingInMemory) {
+      const user = inMemoryDb.users.find(u => u.id.toString() === id.toString());
+      if (!user) return null;
+      
+      return { ...user, hashed_password: undefined };
+    }
+    
+    let client;
+    try {
+      client = await getClient();
+      const result = await client.query(
+        'SELECT id, email, username, is_active, subscription_tier, created_at FROM users WHERE id = $1',
+        [id]
+      );
+      
+      return result.rows[0] || null;
+    } catch (err) {
+      console.error('Error getting user by ID:', err);
+      throw err;
+    } finally {
+      if (client) client.release();
+    }
+  },
+  
+  verifyToken: (token) => {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      return decoded;
+    } catch (err) {
+      console.error('Error verifying token:', err);
+      return null;
+    }
   }
 };
 
@@ -487,5 +699,6 @@ module.exports = {
   deploymentQueries,
   cloudProviderQueries,
   userSettingsQueries,
+  userQueries,
   inMemoryDb
 };
