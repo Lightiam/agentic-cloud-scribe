@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
-const { testConnection, initDatabase, deploymentQueries, cloudProviderQueries, userSettingsQueries } = require('./db');
+const { testConnection, initDatabase, deploymentQueries, cloudProviderQueries, userSettingsQueries, userQueries } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -29,12 +29,22 @@ app.post('/auth/register', async (req, res) => {
   try {
     const { email, username, password } = req.body;
     
+    if (!email || !username || !password) {
+      return res.status(400).json({ error: 'Email, username, and password are required' });
+    }
+    
+    const result = await userQueries.registerUser(email, username, password);
+    
     res.status(201).json({
-      access_token: "placeholder_token",
-      token_type: "bearer"
+      access_token: result.token,
+      token_type: "bearer",
+      user: result.user
     });
   } catch (err) {
     console.error('Error registering user:', err);
+    if (err.message.includes('already exists')) {
+      return res.status(409).json({ error: err.message });
+    }
     res.status(500).json({ error: 'Failed to register user' });
   }
 });
@@ -43,9 +53,16 @@ app.post('/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+    
+    const result = await userQueries.loginUser(email, password);
+    
     res.status(200).json({
-      access_token: "placeholder_token",
-      token_type: "bearer"
+      access_token: result.token,
+      token_type: "bearer",
+      user: result.user
     });
   } catch (err) {
     console.error('Error logging in:', err);
@@ -150,19 +167,19 @@ app.get('/deployments', async (req, res) => {
     const deployments = await deploymentQueries.getDeployments(userId);
     
     const formattedDeployments = deployments.map(deployment => ({
-      id: deployment.id,
-      name: deployment.name,
-      description: deployment.description,
+      deployment_id: deployment.id.toString(),
+      prompt: deployment.description,
+      provider: deployment.providers?.[0] || 'aws',
       status: deployment.status,
-      providers: deployment.providers || ['aws'],
+      cost_estimate: deployment.cost_estimate?.total || 0,
       created_at: deployment.created_at || new Date().toISOString(),
-      updated_at: deployment.updated_at || new Date().toISOString(),
-      config: deployment.config || {
-        performance: 'standard',
-        region: 'us-east-1'
-      },
-      cost_estimate: deployment.cost_estimate || {
-        total: Math.floor(Math.random() * 100) + 20
+      instance_config: deployment.config || {},
+      parsed_requirements: deployment.parsed_requirements || {
+        cpu: "2 cores",
+        memory: "4 GB",
+        storage: "20 GB",
+        network: "1 Gbps",
+        os: "Linux"
       }
     }));
     
@@ -181,7 +198,24 @@ app.get('/deployments/:id', async (req, res) => {
       return res.status(404).json({ error: 'Deployment not found' });
     }
     
-    res.status(200).json(deployment);
+    const formattedDeployment = {
+      deployment_id: deployment.id.toString(),
+      prompt: deployment.description,
+      provider: deployment.providers?.[0] || 'aws',
+      status: deployment.status,
+      cost_estimate: deployment.cost_estimate?.total || 0,
+      created_at: deployment.created_at || new Date().toISOString(),
+      instance_config: deployment.config || {},
+      parsed_requirements: deployment.parsed_requirements || {
+        cpu: "2 cores",
+        memory: "4 GB",
+        storage: "20 GB",
+        network: "1 Gbps",
+        os: "Linux"
+      }
+    };
+    
+    res.status(200).json(formattedDeployment);
   } catch (err) {
     console.error('Error getting deployment:', err);
     res.status(500).json({ error: 'Failed to get deployment' });
