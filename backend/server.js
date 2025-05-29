@@ -8,10 +8,23 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-  origin: ["https://database-psql-app-qhnk12xb.devinapps.com", "https://database-psql-app-tunnel-chtspune.devinapps.com", 'https://database-psql-app-qhnk12xb.devinapps.com', 'http://localhost:8080'],
+  origin: ["https://database-psql-app-qhnk12xb.devinapps.com", "https://database-psql-app-tunnel-vfash9lm.devinapps.com", "https://database-psql-app-tunnel-chtspune.devinapps.com", 'http://localhost:8080'],
   credentials: true
 }));
 app.use(express.json());
+
+const authenticate = (req, res, next) => {
+  if (req.path === '/health' || 
+      req.path === '/auth/login' || 
+      req.path === '/auth/register' ||
+      req.path === '/pricing/tiers') {
+    return next();
+  }
+  
+  next();
+};
+
+app.use(authenticate);
 
 (async () => {
   const connected = await testConnection();

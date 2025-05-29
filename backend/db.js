@@ -78,7 +78,14 @@ const getClient = async () => {
     return {
       query: async (text, params) => {
         console.log('In-memory DB query:', text, params);
-        return { rows: [] }; // Will be overridden by specific query implementations
+        
+        if (text.includes('SELECT COUNT(*) FROM users')) {
+          return { 
+            rows: [{ count: inMemoryDb.users.length.toString() }] 
+          };
+        }
+        
+        return { rows: [] }; // Default response for other queries
       },
       release: () => {} // No-op for in-memory
     };
