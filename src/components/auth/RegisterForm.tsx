@@ -87,7 +87,7 @@ const RegisterForm = () => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email" className="text-white">Email</Label>
         <Input
           id="email"
           name="email"
@@ -95,13 +95,13 @@ const RegisterForm = () => {
           value={formData.email}
           onChange={handleChange}
           required
-          className="bg-slate-700 border-slate-600 text-white"
+          className="bg-[#21284a] border-[#2f396a] text-white focus:border-[#607afb] focus:ring-[#607afb]"
           placeholder="Enter your email"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="username">Username</Label>
+        <Label htmlFor="username" className="text-white">Username</Label>
         <Input
           id="username"
           name="username"
@@ -109,13 +109,13 @@ const RegisterForm = () => {
           value={formData.username}
           onChange={handleChange}
           required
-          className="bg-slate-700 border-slate-600 text-white"
+          className="bg-[#21284a] border-[#2f396a] text-white focus:border-[#607afb] focus:ring-[#607afb]"
           placeholder="Choose a username"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password" className="text-white">Password</Label>
         <Input
           id="password"
           name="password"
@@ -123,13 +123,13 @@ const RegisterForm = () => {
           value={formData.password}
           onChange={handleChange}
           required
-          className="bg-slate-700 border-slate-600 text-white"
+          className="bg-[#21284a] border-[#2f396a] text-white focus:border-[#607afb] focus:ring-[#607afb]"
           placeholder="Create a password"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirm Password</Label>
+        <Label htmlFor="confirmPassword" className="text-white">Confirm Password</Label>
         <Input
           id="confirmPassword"
           name="confirmPassword"
@@ -137,7 +137,7 @@ const RegisterForm = () => {
           value={formData.confirmPassword}
           onChange={handleChange}
           required
-          className="bg-slate-700 border-slate-600 text-white"
+          className="bg-[#21284a] border-[#2f396a] text-white focus:border-[#607afb] focus:ring-[#607afb]"
           placeholder="Confirm your password"
         />
       </div>
@@ -145,7 +145,8 @@ const RegisterForm = () => {
       <Button
         type="submit"
         disabled={isLoading}
-        className="w-full bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600"
+        variant="cloud"
+        className="w-full"
       >
         {isLoading ? 'Creating Account...' : 'Create Account'}
       </Button>

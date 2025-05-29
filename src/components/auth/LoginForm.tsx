@@ -70,7 +70,7 @@ const LoginForm = () => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email" className="text-white">Email</Label>
         <Input
           id="email"
           name="email"
@@ -78,12 +78,12 @@ const LoginForm = () => {
           value={formData.email}
           onChange={handleChange}
           required
-          className="bg-slate-700 border-slate-600 text-white"
+          className="bg-[#21284a] border-[#2f396a] text-white focus:border-[#607afb] focus:ring-[#607afb]"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password" className="text-white">Password</Label>
         <Input
           id="password"
           name="password"
@@ -91,14 +91,15 @@ const LoginForm = () => {
           value={formData.password}
           onChange={handleChange}
           required
-          className="bg-slate-700 border-slate-600 text-white"
+          className="bg-[#21284a] border-[#2f396a] text-white focus:border-[#607afb] focus:ring-[#607afb]"
         />
       </div>
 
       <Button
         type="submit"
         disabled={isLoading}
-        className="w-full bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600"
+        variant="cloud"
+        className="w-full"
       >
         {isLoading ? 'Logging in...' : 'Login'}
       </Button>
